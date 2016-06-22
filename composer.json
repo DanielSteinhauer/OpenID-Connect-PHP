@@ -1,13 +1,16 @@
 {
     "name": "raegmaen/openid-connect-php",
-    "description": "Bare-bones OpenID Connect client",
+    "description": "OpenID Connect client",
     "require": {
-        "php": ">=5.2",
+        "php": ">=5.6",
         "phpseclib/phpseclib" : "2.0.1",
         "ext-json": "*",
-        "ext-curl": "*"
+        "ext-curl": "*",
+        "kelvinmo/simplejwt": "^0.1.4"
     },
     "autoload": {
-        "classmap": ["OpenIDConnectClient.php"]
+        "psr-4": {
+            "Raegmaen\\OpenIdConnect\\": "src/"
+        }
     }
 }
