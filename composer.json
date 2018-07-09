@@ -1,5 +1,6 @@
 {
     "name": "raegmaen/openid-connect-php",
+    "license": "Apache-2.0",
     "description": "OpenID Connect client",
     "require": {
         "php": ">=5.6",
