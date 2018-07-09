@@ -54,7 +54,7 @@ class Exception extends \Exception
      * @param int            $code
      * @param Exception|null $previous
      */
-    public function __construct($context, $message, $code = self::CODE_DEFAULT_ERROR, Exception $previous = null)
+    public function __construct($context, $message, $code = self::CODE_DEFAULT_ERROR, \Exception $previous = null)
     {
         parent::__construct($message, $code, $previous);
         $this->context = $context;
