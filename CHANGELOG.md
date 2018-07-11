@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## Version 0.1.1
+
+* Composer.json also contains license key
+
 ## Version 0.1.0
 
 * Initial release
