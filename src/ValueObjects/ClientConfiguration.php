@@ -10,12 +10,13 @@ use Raegmaen\OpenIdConnect\Exceptions\InvalidArgumentException;
  */
 class ClientConfiguration
 {
-    const CLIENT_SECRET_BASIC                = 'client_secret_basic';
+    const CLIENT_SECRET_BASIC = 'client_secret_basic';
     const CLIENT_AUTHORIZATION_RESPONSE_TYPE = 'code';
-    const OPEN_ID_SCOPE                      = 'openid';
-    const CLIENT_GRANT_TYPE                  = 'authorization_code';
-    const SUPPORTED_AUTH_METHODS             = [ClientConfiguration::CLIENT_SECRET_BASIC, ClientConfiguration::CLIENT_SECRET_POST];
-    const CLIENT_SECRET_POST                 = 'client_secret_post';
+    const OPEN_ID_SCOPE = 'openid';
+    const CLIENT_GRANT_TYPE = 'authorization_code';
+    const SUPPORTED_AUTH_METHODS = [ClientConfiguration::CLIENT_SECRET_BASIC, ClientConfiguration::CLIENT_SECRET_POST];
+    const CLIENT_SECRET_POST = 'client_secret_post';
+    const POSSIBLE_PROMPT_VALUES = ['none', 'login', 'consent', 'select_account'];
 
     /**
      * @var string
@@ -43,21 +44,27 @@ class ClientConfiguration
     private $authParams;
 
     /**
-     * @param string $clientId
-     * @param string $clientSecret
-     * @param string $redirectUrl
-     * @param array  $scopes
-     * @param array  $authParams
+     * @var null|string
+     */
+    private $prompt;
+
+    /**
+     * @param string      $clientId
+     * @param string      $clientSecret
+     * @param string      $redirectUrl
+     * @param array       $scopes
+     * @param array       $authParams
+     * @param string|null $prompt
      *
      * @return ClientConfiguration
      * @throws InvalidArgumentException
      */
-    public static function create($clientId, $clientSecret, $redirectUrl, $scopes = [], $authParams = [])
+    public static function create($clientId, $clientSecret, $redirectUrl, $scopes = [], $authParams = [], $prompt = null)
     {
         if (!is_string($clientId) || strlen($clientId) < 1) {
             throw new InvalidArgumentException(
                 'client_configuration.construct',
-                sprintf('Provided client id is invalid: "%s"', (string) $clientId),
+                sprintf('Provided client id is invalid: "%s"', (string)$clientId),
                 Exception::CODE_CLIENT_ID
             );
         }
@@ -65,7 +72,7 @@ class ClientConfiguration
         if (!is_string($clientSecret) || strlen($clientSecret) < 1) {
             throw new InvalidArgumentException(
                 'client_configuration.construct',
-                sprintf('Provided client secret is invalid: "%s"', (string) $clientSecret),
+                sprintf('Provided client secret is invalid: "%s"', (string)$clientSecret),
                 Exception::CODE_CLIENT_SECRET
             );
         }
@@ -73,7 +80,7 @@ class ClientConfiguration
         if (!is_string($redirectUrl) || strlen($redirectUrl) < 1) {
             throw new InvalidArgumentException(
                 'client_configuration.construct',
-                sprintf('Provided redirect url is invalid: "%s"', (string) $redirectUrl),
+                sprintf('Provided redirect url is invalid: "%s"', (string)$redirectUrl),
                 Exception::CODE_REDIRECT_URL
             );
         }
@@ -94,23 +101,33 @@ class ClientConfiguration
             );
         }
 
-        return new self($clientId, $clientSecret, $redirectUrl, $scopes, $authParams);
+        if (null !== $prompt && !in_array($prompt, self::POSSIBLE_PROMPT_VALUES)) {
+            throw new InvalidArgumentException(
+                'client_configuration.construct',
+                'Provided prompt value is invalid!',
+                Exception::CODE_PROMPT
+            );
+        }
+
+        return new self($clientId, $clientSecret, $redirectUrl, $scopes, $authParams, $prompt);
     }
 
     /**
-     * @param string $clientId
-     * @param string $clientSecret
-     * @param string $redirectUrl
-     * @param array  $scopes
-     * @param array  $authParams
+     * @param string      $clientId
+     * @param string      $clientSecret
+     * @param string      $redirectUrl
+     * @param array       $scopes
+     * @param array       $authParams
+     * @param string|null $prompt
      */
-    private function __construct($clientId, $clientSecret, $redirectUrl, $scopes, $authParams)
+    private function __construct($clientId, $clientSecret, $redirectUrl, $scopes, $authParams, $prompt)
     {
         $this->clientId = $clientId;
         $this->clientSecret = $clientSecret;
         $this->redirectUrl = $redirectUrl;
         $this->scopes = $scopes;
         $this->authParams = $authParams;
+        $this->prompt = $prompt;
     }
 
     /**
@@ -151,5 +168,13 @@ class ClientConfiguration
     public function getAuthParams()
     {
         return $this->authParams;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getPrompt()
+    {
+        return $this->prompt;
     }
 }

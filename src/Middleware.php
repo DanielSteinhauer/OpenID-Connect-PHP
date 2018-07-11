@@ -115,6 +115,9 @@ class Middleware
         );
 
         $params['scope'] = implode(' ', $params['scope']);
+        if (null !== $this->clientConfiguration->getPrompt()) {
+            $params['prompt'] = $this->clientConfiguration->getPrompt();
+        }
 
         return UserRedirect::create(
             $this->providerConfiguration->getAutorizationEndpoint(),

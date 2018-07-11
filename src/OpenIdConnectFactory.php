@@ -27,6 +27,7 @@ class OpenIdConnectFactory
      * @param SessionInterface $session
      * @param array            $scopes
      * @param array            $authParameters
+     * @param string|null      $prompt
      *
      * @return Client
      * @throws Exception
@@ -38,8 +39,9 @@ class OpenIdConnectFactory
         $redirectUrl,
         SessionInterface $session = null,
         $scopes = [],
-        $authParameters = []
-    ) {
+        $authParameters = [],
+        $prompt = null
+    ){
         try {
             OpenIDConnectHelper::checkPrerequisites();
 
@@ -54,7 +56,8 @@ class OpenIdConnectFactory
                 $clientSecret,
                 $redirectUrl,
                 $scopes,
-                $authParameters
+                $authParameters,
+                $prompt
             );
 
             $connector = Connector::create($providerUrl);
