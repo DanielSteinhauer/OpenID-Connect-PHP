@@ -38,6 +38,7 @@ class Exception extends \Exception
     const CODE_PROVIDER_CONFIGURATION = 260;
     const CODE_TOKEN_WRAPPER          = 270;
     const CODE_USER_REDIRECT          = 280;
+    const CODE_PROMPT                 = 290;
 
     /**
      * Structured with "."
