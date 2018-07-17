@@ -2,6 +2,8 @@
 
 namespace Raegmaen\OpenIdConnect;
 
+use Psr\SimpleCache\CacheInterface;
+use Raegmaen\OpenIdConnect\Cache\NullCache;
 use Raegmaen\OpenIdConnect\Exceptions\Exception;
 use Raegmaen\OpenIdConnect\Helper\OpenIDConnectHelper;
 use Raegmaen\OpenIdConnect\Session\DefaultSession;
@@ -20,14 +22,15 @@ class OpenIdConnectFactory
     }
 
     /**
-     * @param string           $providerUrl
-     * @param string           $clientId
-     * @param string           $clientSecret
-     * @param string           $redirectUrl
-     * @param SessionInterface $session
-     * @param array            $scopes
-     * @param array            $authParameters
-     * @param string|null      $prompt
+     * @param string              $providerUrl
+     * @param string              $clientId
+     * @param string              $clientSecret
+     * @param string              $redirectUrl
+     * @param SessionInterface    $session
+     * @param array               $scopes
+     * @param array               $authParameters
+     * @param string|null         $prompt
+     * @param CacheInterface|null $cache
      *
      * @return Client
      * @throws Exception
@@ -40,7 +43,8 @@ class OpenIdConnectFactory
         SessionInterface $session = null,
         $scopes = [],
         $authParameters = [],
-        $prompt = null
+        $prompt = null,
+        CacheInterface $cache = null
     ){
         try {
             OpenIDConnectHelper::checkPrerequisites();
@@ -60,8 +64,12 @@ class OpenIdConnectFactory
                 $prompt
             );
 
+            if (null === $cache) {
+                $cache = new NullCache();
+            }
+
             $connector = Connector::create($providerUrl);
-            $middleware = Middleware::create($clientConfiguration, $connector, $sessionHandler);
+            $middleware = Middleware::create($clientConfiguration, $connector, $sessionHandler, $cache);
             $client = Client::create($middleware);
 
             return $client;

@@ -2,6 +2,7 @@
 
 namespace Raegmaen\OpenIdConnect;
 
+use Psr\SimpleCache\CacheInterface;
 use Raegmaen\OpenIdConnect\Exceptions\ClientException;
 use Raegmaen\OpenIdConnect\Exceptions\ConfigurationNotFoundException;
 use Raegmaen\OpenIdConnect\Exceptions\ConnectorException;
@@ -25,6 +26,8 @@ use Raegmaen\OpenIdConnect\ValueObjects\UserRedirect;
  */
 class Middleware
 {
+    const OIDC_PROVIDER_CONFIGURATION_CACHE_KEY = 'oidc_provider_configuration';
+
     /**
      * @var ClientConfiguration
      */
@@ -45,52 +48,92 @@ class Middleware
      */
     private $sessionHandler;
 
+    /**
+     * @var CacheInterface
+     */
+    private $cache;
+
     public static function create(
         ClientConfiguration $clientConfiguration,
         Connector $connector,
-        SessionHandler $sessionHandler
-    ) {
-        $providerConfiguration = self::refreshProviderConfiguration($connector);
+        SessionHandler $sessionHandler,
+        CacheInterface $cache
+    )
+    {
+        $providerConfiguration = self::refreshProviderConfiguration($connector, $cache);
 
-        $middleware = new self($clientConfiguration, $providerConfiguration, $connector, $sessionHandler);
+        $middleware = new self($clientConfiguration, $providerConfiguration, $connector, $sessionHandler, $cache);
         $middleware->checkSupportedScopes($clientConfiguration->getScopes());
 
         return $middleware;
     }
 
     /**
-     * @param Connector $connector
+     * @param Connector      $connector
+     * @param CacheInterface $cache
      *
      * @return ProviderConfiguration
      * @throws ConfigurationNotFoundException
      * @throws ConnectorException
      */
-    private static function refreshProviderConfiguration(Connector $connector)
+    private static function refreshProviderConfiguration(Connector $connector, CacheInterface $cache)
     {
+        $cacheItem = self::getProviderConfigurationFromCache($cache);
+        if (null !== $cacheItem) {
+            return ProviderConfiguration::createFromArray($cacheItem);
+        }
+
         $wellKnownConfigUrl = ".well-known/openid-configuration";
         $providerConfigurationArray = $connector->callProvider($connector->prependProviderUrl($wellKnownConfigUrl));
+        self::setProviderConfigurationToCache($cache, $providerConfigurationArray);
 
         return ProviderConfiguration::createFromArray($providerConfigurationArray);
     }
 
     /**
-     * Middleware constructor.
+     * @param CacheInterface $cache
      *
-     * @param ClientConfiguration   $clientConfiguration
-     * @param ProviderConfiguration $providerConfiguration
-     * @param Connector             $connector
-     * @param SessionHandler        $sessionHandler
+     * @return array|null
      */
+    private static function getProviderConfigurationFromCache(CacheInterface $cache)
+    {
+        try {
+            $cacheItem = $cache->get(self::OIDC_PROVIDER_CONFIGURATION_CACHE_KEY);
+        } catch (\Psr\SimpleCache\InvalidArgumentException $invalidArgumentException) {
+            $cacheItem = null;
+        }
+
+        return $cacheItem;
+    }
+
+    /**
+     * @param CacheInterface $cache
+     * @param array          $providerConfigurationArray
+     */
+    private static function setProviderConfigurationToCache(CacheInterface $cache, $providerConfigurationArray)
+    {
+        try {
+            $cache->set(self::OIDC_PROVIDER_CONFIGURATION_CACHE_KEY, $providerConfigurationArray, new \DateInterval('PT3H'));
+        } catch (\Psr\SimpleCache\InvalidArgumentException $invalidArgumentException) {
+            // Noop
+        } catch (\Exception $exception) {
+            // Noop
+        }
+    }
+
     private function __construct(
         ClientConfiguration $clientConfiguration,
         ProviderConfiguration $providerConfiguration,
         Connector $connector,
-        SessionHandler $sessionHandler
-    ) {
+        SessionHandler $sessionHandler,
+        CacheInterface $cache
+    )
+    {
         $this->clientConfiguration = $clientConfiguration;
         $this->providerConfiguration = $providerConfiguration;
         $this->connector = $connector;
         $this->sessionHandler = $sessionHandler;
+        $this->cache = $cache;
     }
 
     /**
@@ -182,7 +225,7 @@ class Middleware
         if ($authMethod === ClientConfiguration::CLIENT_SECRET_POST) {
             $tokenParams['client_id'] = $this->clientConfiguration->getClientId();
             $tokenParams['client_secret'] = $this->clientConfiguration->getClientSecret();
-        } elseif ($authMethod === ClientConfiguration::CLIENT_SECRET_BASIC) {
+        } else if ($authMethod === ClientConfiguration::CLIENT_SECRET_BASIC) {
             $tokenHeaders[] = 'Authorization: Basic '
                 . base64_encode(
                     $this->clientConfiguration->getClientId() . ':' . $this->clientConfiguration->getClientSecret()
