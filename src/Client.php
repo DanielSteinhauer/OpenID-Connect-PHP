@@ -29,14 +29,13 @@ use Raegmaen\OpenIdConnect\Exceptions\Exception;
 use Raegmaen\OpenIdConnect\Exceptions\InvalidArgumentException;
 use Raegmaen\OpenIdConnect\ValueObjects\ClientConfiguration;
 use Raegmaen\OpenIdConnect\Token\TokenWrapper;
-use Raegmaen\OpenIdConnect\ValueObjects\UserRedirect;
 
 /**
  * TODO: Move this note to documentation!
  * Please note this class stores nonce in
  * $_SESSION['openid_connect_nonce']
  */
-class Client
+class Client implements ClientInterface
 {
     /**
      * @var Middleware
@@ -107,10 +106,7 @@ class Client
     }
 
     /**
-     * @param array $requestData
-     *
-     * @return TokenWrapper|UserRedirect
-     * @throws ClientException
+     * {@inheritdoc}
      */
     public function authenticate($requestData = [])
     {
@@ -156,6 +152,8 @@ class Client
                 // Success!
                 return $tokenResponseWrapper;
             } catch (InvalidArgumentException $e) {
+                $this->middleware->cleanSession();
+
                 throw new ClientException(
                     'authenticate.step2.invalid_argument',
                     $e->getMessage(),
@@ -163,6 +161,8 @@ class Client
                     $e
                 );
             } catch (ConnectorException $e) {
+                $this->middleware->cleanSession();
+
                 throw new ClientException(
                     'authenticate.step2.connection_error',
                     $e->getMessage(),
@@ -172,6 +172,8 @@ class Client
             }
         }
 
+        $this->middleware->cleanSession();
+
         throw new ClientException(
             'authenticate.internal_error',
             'Unknown error - Authentication failed!',
@@ -180,41 +182,7 @@ class Client
     }
 
     /**
-     * Requests Access token with refresh token
-     *
-     * @param TokenWrapper $tokenWrapper
-     *
-     * @return TokenWrapper
-     * @throws ClientException
-     */
-    public function refreshToken(TokenWrapper $tokenWrapper)
-    {
-        try {
-            return $this->middleware->refreshAccessToken($tokenWrapper);
-        } catch (InvalidArgumentException $e) {
-            throw new ClientException(
-                'refresh_token.invalid_argument',
-                $e->getMessage(),
-                $e->getCode(),
-                $e
-            );
-        } catch (ConnectorException $e) {
-            throw new ClientException(
-                'refresh_token.connection_error',
-                $e->getMessage(),
-                $e->getCode(),
-                $e
-            );
-        }
-    }
-
-    /**
-     * @param TokenWrapper $tokenWrapper
-     *
-     * @return array
-     * @throws ClientException
-     *
-     * http://openid.net/specs/openid-connect-core-1_0.html#UserInfo
+     * {@inheritdoc}
      */
     public function requestUserInfo(TokenWrapper $tokenWrapper)
     {
@@ -230,6 +198,30 @@ class Client
         } catch (ConnectorException $e) {
             throw new ClientException(
                 'userinfo.connection_error',
+                $e->getMessage(),
+                $e->getCode(),
+                $e
+            );
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function refreshToken(TokenWrapper $tokenWrapper)
+    {
+        try {
+            return $this->middleware->refreshAccessToken($tokenWrapper);
+        } catch (InvalidArgumentException $e) {
+            throw new ClientException(
+                'refresh_token.invalid_argument',
+                $e->getMessage(),
+                $e->getCode(),
+                $e
+            );
+        } catch (ConnectorException $e) {
+            throw new ClientException(
+                'refresh_token.connection_error',
                 $e->getMessage(),
                 $e->getCode(),
                 $e

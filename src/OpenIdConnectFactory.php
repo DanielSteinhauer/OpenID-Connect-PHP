@@ -32,7 +32,7 @@ class OpenIdConnectFactory
      * @param string|null         $prompt
      * @param CacheInterface|null $cache
      *
-     * @return Client
+     * @return ClientInterface
      * @throws Exception
      */
     public static function create(

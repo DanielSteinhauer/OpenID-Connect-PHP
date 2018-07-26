@@ -12,7 +12,7 @@ Use cases implemented:
 ## Install
 Composer
 ```
-composer require raegmaen/openid-connect-php:0.1.*
+composer require raegmaen/openid-connect-php
 ```
 
 ## License
