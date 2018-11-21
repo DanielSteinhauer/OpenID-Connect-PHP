@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## Version 0.2.1
+
+* Update `kelvinmo/simplejwt` to version 0.1.6 supporting newer versions of OpenSSL > 1.0
+
 ## Version 0.2.0
 
 * Added support for oidc code flow option `prompt`
